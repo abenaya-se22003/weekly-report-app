@@ -159,6 +159,14 @@ class ApiClient {
     return this.request<{ charts: any }>('/dashboard/charts');
   }
 
+  // ── AI Assistant (Manager Only) ──
+  aiChat(body: { message: string; history?: Array<{ role: 'user' | 'assistant'; content: string }> }) {
+    return this.request<{ reply: string; modelUsed: string; contextReportCount: number; isLiveAnthropic: boolean }>('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
   // ── Stats (diagnostic) ──
   getStats() {
     return this.request<any>('/stats');

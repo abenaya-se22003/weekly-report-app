@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 const projectRoutes = require('./routes/project.routes');
 const reportRoutes = require('./routes/report.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const aiRoutes = require('./routes/ai.routes');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
@@ -55,12 +56,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Convenience aliases (in case requests are made without /api prefix)
 app.use('/auth', authRoutes);
 app.use('/projects', projectRoutes);
 app.use('/reports', reportRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/ai', aiRoutes);
 
 // ─── 404 Handler ───────────────────────────────────────────
 app.use((req, res) => {

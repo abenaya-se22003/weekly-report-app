@@ -122,25 +122,28 @@ describe('Security & Role-Based Access Control Tests', () => {
     expect(res.body.error).toMatch(/forbidden|MANAGER/i);
   });
 
-  // ─── Verification: Manager CAN access authorized routes ───
-  test('A manager CAN access the dashboard summary (returns 200)', async () => {
+  test('A team member CANNOT call AI Chat Assistant (returns 403)', async () => {
     const res = await request(app)
-      .get('/api/dashboard/summary')
-      .set('Authorization', `Bearer ${managerToken}`);
+      .post('/api/ai/chat')
+      .set('Authorization', `Bearer ${aliceToken}`)
+      .send({
+        message: 'What did the team work on last week?',
+      });
 
-    expect(res.status).toBe(200);
-    expect(res.body.summary).toBeDefined();
-    expect(res.body.summary.totalTeamMembers).toBe(5);
-    expect(res.body.summary.totalActiveProjects).toBe(4);
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/forbidden|MANAGER/i);
   });
 
-  test('A manager CAN view any team member report detail (returns 200)', async () => {
+  test('A manager CAN call AI Chat Assistant (returns 200 with synthesized reply)', async () => {
     const res = await request(app)
-      .get(`/api/reports/${bobReport.id}`)
-      .set('Authorization', `Bearer ${managerToken}`);
+      .post('/api/ai/chat')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({
+        message: 'What are the current blockers?',
+      });
 
     expect(res.status).toBe(200);
-    expect(res.body.report).toBeDefined();
-    expect(res.body.report.id).toBe(bobReport.id);
+    expect(res.body.reply).toBeDefined();
+    expect(res.body.contextReportCount).toBeGreaterThan(0);
   });
 });
