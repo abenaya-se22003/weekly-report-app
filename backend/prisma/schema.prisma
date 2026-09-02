@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  TEAM_MEMBER
+  MANAGER
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_CORRECTION
+  APPROVED
+}
+
+enum ReviewAction {
+  APPROVED
+  REQUEST_CHANGES
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+  DEFERRED
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(TEAM_MEMBER)
+  createdAt    DateTime @default(now())
+
+  reports Report[]
+  reviews ReportReview[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  reports Report[]
+
+  @@map("projects")
+}
+
+model Report {
+  id            String       @id @default(uuid())
+  userId        String
+  projectId     String
+  weekStartDate DateTime     @db.Date
+  weekEndDate   DateTime     @db.Date
+  status        ReportStatus @default(DRAFT)
+  version       Int          @default(1)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  project  Project         @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  versions ReportVersion[]
+  reviews  ReportReview[]
+
+  @@unique([userId, projectId, weekStartDate])
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@map("reports")
+}
+
+model ReportVersion {
+  id          String   @id @default(uuid())
+  reportId    String
+  versionNum  Int
+  content     Json
+  submittedAt DateTime @default(now())
+
+  report  Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  tasks   TaskEntry[]
+  reviews ReportReview[]
+
+  @@unique([reportId, versionNum])
+  @@map("report_versions")
+}
+
+model ReportReview {
+  id              String       @id @default(uuid())
+  reportId        String
+  reviewerId      String
+  action          ReviewAction
+  comment         String
+  reportVersionId String
+  createdAt       DateTime     @default(now())
+
+  report        Report        @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reviewer      User          @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([reviewerId])
+  @@map("report_reviews")
+}
+
+model TaskEntry {
+  id              String       @id @default(uuid())
+  reportVersionId String
+  taskName        String
+  priority        TaskPriority @default(MEDIUM)
+  plannedPercent  Float        @default(0)
+  actualPercent   Float        @default(0)
+  status          TaskStatus   @default(NOT_STARTED)
+  timePlanned     Float        @default(0)
+  timeSpent       Float        @default(0)
+  deliverable     String?
+
+  reportVersion ReportVersion @relation(fields: [reportVersionId], references: [id], onDelete: Cascade)
+
+  @@map("task_entries")
+}
